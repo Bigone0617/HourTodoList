@@ -1,23 +1,61 @@
 const todoListContainer = document.getElementById("todoListContainer");
 
+
+// 저장 버튼 = 할일 저장
 const saveTodo = (time, isDone) => {
     const value = document.getElementById("input"+time).value;
+    let todoId = time+"todo";
+    let todoArr = [];
 
-    if(localStorage.getItem(time+"todo") !== null){
-        localStorage.removeItem(time+"todo");
-    }
 
-    localStorage.setItem(time+"todo", JSON.stringify({value : value, isDone : isDone}));
+    if(localStorage.getItem("Day"+getDay()) !== null){
+        todoArr = JSON.parse(localStorage.getItem("Day"+getDay()));
+        
+        // 이미 그시간에 저장되어 있는 할일있을 경우 인덱스구하기
+        var overlapIndex = todoArr.findIndex((todo, index) => todo[todoId] !== undefined);
+
+        // 이미 그 시간에 저장되어 있는 할일이 있으면 바꿔치기
+        if(overlapIndex !== -1){
+            todoArr[overlapIndex] = {
+                [todoId] : {
+                    value : value,
+                    isDone : isDone
+                }
+            }
+        }else{
+            todoArr = todoArr.concat([
+                {[todoId] : {
+                    value : value,
+                    isDone : isDone
+                }}
+            ]);
+        }
+
+        
+    }else{
+        todoArr = [
+            {[todoId] : {
+                value : value,
+                isDone : isDone
+            }}
+        ]
+    };
+
+    localStorage.setItem("Day"+getDay(), JSON.stringify(todoArr));
 }
 
-const setValue = (time) => {
-    const values = localStorage.getItem(time+"todo");
+// input에 값 넣기
+const setValue = (time, today) => {
+    const storageValue = localStorage.getItem("Day"+today);
 
-    if(values !== null ){
+    if(storageValue !== null ){
+        let todos = JSON.parse(storageValue);
+        let timeTodo = todos.find(todo => todo[time+"todo"]);
+
         const inputBox = document.getElementById("input"+time)
-        inputBox.value = JSON.parse(values).value;
+        inputBox.value = timeTodo !== undefined ? timeTodo[time+"todo"].value : "";
 
-        if(JSON.parse(values).isDone){
+        if(timeTodo !== undefined && timeTodo[time+"todo"].isDone){
             inputBox.readOnly = true;
             inputBox.style.background = "#A9A9A9";
 
@@ -28,7 +66,8 @@ const setValue = (time) => {
     
 }
 
-const makeTodo = (time) => {
+// todo ui그리기
+const makeTodo = (time, today) => {
     let todoNode = document.createElement("div");
 
     todoNode.id ="div" + time;
@@ -102,9 +141,10 @@ const makeTodo = (time) => {
 
         // 수정버튼 숨기기
         modifyBtn.hidden = true;
+
+        saveTodo(time, false);
     });
 
-    
     todoNode.appendChild(timeNode);
     todoNode.appendChild(todoInput);
     todoNode.appendChild(saveBtn);
@@ -115,12 +155,12 @@ const makeTodo = (time) => {
     todoListContainer.appendChild(todoNode);
 
     // 저장된 todo가 있으면 값 넣어주기
-    setValue(time);
+    setValue(time, today);
 }
 
 const makeList = () => {
     for(var i = 0; i < 24; i++){
-        makeTodo(i);
+        makeTodo(i, getDay());
     }
 }
 
